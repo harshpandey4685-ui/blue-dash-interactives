@@ -1,25 +1,50 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { signUp, user } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email && password) {
-      toast({
-        title: "Account created!",
-        description: "Welcome to BlogNest",
-      });
+  useEffect(() => {
+    if (user) {
       navigate("/");
     }
+  }, [user, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (password.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    const { error } = await signUp(email, password);
+    
+    if (!error) {
+      toast({
+        title: "Account created!",
+        description: "Welcome to BlogNest. You can now log in.",
+      });
+      navigate("/login");
+    }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -58,8 +83,12 @@ const Register = () => {
                 className="transition-all focus:scale-[1.01]"
               />
             </div>
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 transition-all hover:scale-[1.02]">
-              Register
+            <Button 
+              type="submit" 
+              className="w-full bg-primary hover:bg-primary/90 transition-all hover:scale-[1.02]"
+              disabled={isLoading}
+            >
+              {isLoading ? "Creating account..." : "Register"}
             </Button>
           </form>
         </CardContent>

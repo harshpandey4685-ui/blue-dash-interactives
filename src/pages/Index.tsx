@@ -1,33 +1,49 @@
+import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import BlogCard from "@/components/BlogCard";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+
+interface Post {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  cover_image: string | null;
+  created_at: string;
+  likes: number;
+  comments: number;
+}
 
 const Index = () => {
-  const posts = [
-    {
-      title: "The Art of Clean Code",
-      excerpt: "Writing clean, maintainable code is an essential skill for every developer. Clean code has evolved significantly over the years. Today, we have powerful tools and methodologies to help us write better code.",
-      tags: ["Programming", "Best Practices"],
-      likes: 189,
-      comments: 32,
-      image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&q=80",
-    },
-    {
-      title: "Design Systems 101",
-      excerpt: "A design system is a collection of reusable components, guided by clear standards, that helps teams build consistent user interfaces.",
-      tags: ["Design", "UI/UX"],
-      likes: 256,
-      comments: 45,
-      image: "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&q=80",
-    },
-    {
-      title: "Modern Web Development",
-      excerpt: "Exploring the latest trends and technologies in web development, from React to serverless architectures and beyond.",
-      tags: ["Web Dev", "Technology"],
-      likes: 342,
-      comments: 67,
-      image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80",
-    },
-  ];
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const fetchPosts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("published", true)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setPosts(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error loading posts",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -50,16 +66,33 @@ const Index = () => {
 
       {/* Blog Posts Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {posts.map((post, index) => (
-            <div
-              key={index}
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <BlogCard {...post} />
-            </div>
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Loading posts...</p>
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No posts yet. Be the first to create one!</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {posts.map((post, index) => (
+              <div
+                key={post.id}
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <BlogCard 
+                  title={post.title}
+                  excerpt={post.content.substring(0, 150)}
+                  tags={post.tags}
+                  likes={post.likes}
+                  comments={post.comments}
+                  image={post.cover_image || undefined}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

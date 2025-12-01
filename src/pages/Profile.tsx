@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,17 +7,77 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { Edit, Copy } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const Profile = () => {
-  const [email] = useState("user@blognest.com");
-  const [skills, setSkills] = useState(["HTML", "JavaScript", "Web Design"]);
+  const { user, signOut } = useAuth();
+  const [email, setEmail] = useState("");
+  const [skills, setSkills] = useState<string[]>([]);
   const [newSkill, setNewSkill] = useState("");
   const [isEditingSkills, setIsEditingSkills] = useState(false);
+  const [postCount, setPostCount] = useState(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    setEmail(user.email || "");
+    loadProfile();
+    loadPostCount();
+  }, [user, navigate]);
+
+  const loadProfile = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("skills")
+      .eq("id", user.id)
+      .single();
+
+    if (data && data.skills) {
+      setSkills(data.skills);
+    }
+  };
+
+  const loadPostCount = async () => {
+    if (!user) return;
+
+    const { count } = await supabase
+      .from("posts")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("published", true);
+
+    setPostCount(count || 0);
+  };
+
+  const saveSkills = async (updatedSkills: string[]) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ skills: updatedSkills })
+      .eq("id", user.id);
+
+    if (error) {
+      toast({
+        title: "Error updating skills",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleAddSkill = () => {
     if (newSkill && !skills.includes(newSkill)) {
-      setSkills([...skills, newSkill]);
+      const updatedSkills = [...skills, newSkill];
+      setSkills(updatedSkills);
+      saveSkills(updatedSkills);
       setNewSkill("");
       toast({
         title: "Skill added",
@@ -27,7 +87,9 @@ const Profile = () => {
   };
 
   const handleRemoveSkill = (skill: string) => {
-    setSkills(skills.filter(s => s !== skill));
+    const updatedSkills = skills.filter(s => s !== skill);
+    setSkills(updatedSkills);
+    saveSkills(updatedSkills);
   };
 
   const handleCopyProfileUrl = () => {
@@ -38,11 +100,8 @@ const Profile = () => {
     });
   };
 
-  const handleLogout = () => {
-    toast({
-      title: "Logged out",
-      description: "You have been logged out successfully",
-    });
+  const handleLogout = async () => {
+    await signOut();
     navigate("/login");
   };
 
@@ -154,15 +213,15 @@ const Profile = () => {
               <h3 className="text-sm font-medium mb-3">Statistics</h3>
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-primary/10 rounded-lg transition-all hover:scale-105">
-                  <p className="text-2xl font-bold text-primary">12</p>
+                  <p className="text-2xl font-bold text-primary">{postCount}</p>
                   <p className="text-sm text-muted-foreground">Posts</p>
                 </div>
                 <div className="text-center p-4 bg-primary/10 rounded-lg transition-all hover:scale-105">
-                  <p className="text-2xl font-bold text-primary">248</p>
+                  <p className="text-2xl font-bold text-primary">0</p>
                   <p className="text-sm text-muted-foreground">Followers</p>
                 </div>
                 <div className="text-center p-4 bg-primary/10 rounded-lg transition-all hover:scale-105">
-                  <p className="text-2xl font-bold text-primary">156</p>
+                  <p className="text-2xl font-bold text-primary">0</p>
                   <p className="text-sm text-muted-foreground">Following</p>
                 </div>
               </div>
