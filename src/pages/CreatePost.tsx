@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,31 +8,119 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const CreatePost = () => {
   const [title, setTitle] = useState("");
   const [tags, setTags] = useState("");
   const [coverImage, setCoverImage] = useState("");
   const [content, setContent] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const handlePublish = () => {
-    if (title && content) {
+  useEffect(() => {
+    if (!user) {
       toast({
-        title: "Post published!",
-        description: "Your story has been shared with the world",
+        title: "Authentication required",
+        description: "Please log in to create posts",
+        variant: "destructive",
       });
-      navigate("/");
-    } else {
+      navigate("/login");
+    }
+  }, [user, navigate]);
+
+  const handlePublish = async () => {
+    if (!title || !content) {
       toast({
         title: "Missing fields",
         description: "Please fill in title and content",
         variant: "destructive",
       });
+      return;
     }
+
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to create posts",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
+    setIsLoading(true);
+
+    const tagsArray = tags.split(",").map(tag => tag.trim()).filter(tag => tag);
+
+    const { error } = await supabase
+      .from("posts")
+      .insert({
+        title,
+        content,
+        tags: tagsArray,
+        cover_image: coverImage || null,
+        user_id: user.id,
+        published: true,
+      });
+
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        title: "Error publishing post",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Post published!",
+      description: "Your story has been shared with the world",
+    });
+    navigate("/");
   };
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to save drafts",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
+    setIsLoading(true);
+
+    const tagsArray = tags.split(",").map(tag => tag.trim()).filter(tag => tag);
+
+    const { error } = await supabase
+      .from("posts")
+      .insert({
+        title: title || "Untitled Draft",
+        content: content || "",
+        tags: tagsArray,
+        cover_image: coverImage || null,
+        user_id: user.id,
+        published: false,
+      });
+
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        title: "Error saving draft",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
       title: "Draft saved",
       description: "Your post has been saved as a draft",
@@ -116,20 +204,23 @@ const CreatePost = () => {
               <Button
                 onClick={handlePublish}
                 className="flex-1 bg-primary hover:bg-primary/90 transition-all hover:scale-[1.02]"
+                disabled={isLoading}
               >
-                Publish Post
+                {isLoading ? "Publishing..." : "Publish Post"}
               </Button>
               <Button
                 onClick={handleSaveDraft}
                 variant="outline"
                 className="flex-1 hover:bg-secondary/10 transition-all hover:scale-[1.02]"
+                disabled={isLoading}
               >
-                Save Draft
+                {isLoading ? "Saving..." : "Save Draft"}
               </Button>
               <Button
                 onClick={() => navigate("/")}
                 variant="outline"
                 className="hover:bg-destructive/10 transition-all hover:scale-[1.02]"
+                disabled={isLoading}
               >
                 Cancel
               </Button>
