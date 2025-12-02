@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PenSquare, User, LogIn } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import blogNestLogo from "@/assets/blognest-logo.png";
 
 const Navbar = () => {
   const { user } = useAuth();
@@ -12,9 +13,13 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           <Link
             to="/"
-            className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent transition-all hover:scale-105"
+            className="transition-all hover:scale-105"
           >
-            BlogNest
+            <img 
+              src={blogNestLogo} 
+              alt="BlogNest" 
+              className="h-10 w-auto"
+            />
           </Link>
 
           <div className="flex items-center gap-3">
