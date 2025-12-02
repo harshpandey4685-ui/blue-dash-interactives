@@ -13,12 +13,12 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           <Link
             to="/"
-            className="transition-all hover:scale-105"
+            className="transition-all hover:scale-105 flex items-center"
           >
             <img 
               src={blogNestLogo} 
               alt="BlogNest" 
-              className="h-10 w-auto"
+              className="h-8 w-auto"
             />
           </Link>
 
