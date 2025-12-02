@@ -18,7 +18,7 @@ const Navbar = () => {
             <img 
               src={blogNestLogo} 
               alt="BlogNest" 
-              className="h-14 w-auto"
+              className="h-14 w-auto drop-shadow-[0_2px_8px_rgba(59,130,246,0.4)]"
             />
           </Link>
 
