@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +7,7 @@ import { Heart, MessageCircle, ArrowRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface BlogCardProps {
+  id: string;
   title: string;
   excerpt: string;
   tags: string[];
@@ -14,7 +16,8 @@ interface BlogCardProps {
   image?: string;
 }
 
-const BlogCard = ({ title, excerpt, tags, likes, comments, image }: BlogCardProps) => {
+const BlogCard = ({ id, title, excerpt, tags, likes, comments, image }: BlogCardProps) => {
+  const navigate = useNavigate();
   const [likeCount, setLikeCount] = useState(likes);
   const [isLiked, setIsLiked] = useState(false);
 
@@ -81,6 +84,7 @@ const BlogCard = ({ title, excerpt, tags, likes, comments, image }: BlogCardProp
         <Button
           variant="ghost"
           size="sm"
+          onClick={() => navigate(`/post/${id}`)}
           className="text-primary hover:text-primary/80 transition-all hover:scale-105"
         >
           Read more
