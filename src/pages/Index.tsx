@@ -82,6 +82,7 @@ const Index = () => {
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <BlogCard 
+                  id={post.id}
                   title={post.title}
                   excerpt={post.content.substring(0, 150)}
                   tags={post.tags}

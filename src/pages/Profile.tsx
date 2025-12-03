@@ -9,6 +9,7 @@ import { Edit, Copy } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import FollowersModal from "@/components/FollowersModal";
 
 const Profile = () => {
   const { user, signOut } = useAuth();
@@ -17,6 +18,10 @@ const Profile = () => {
   const [newSkill, setNewSkill] = useState("");
   const [isEditingSkills, setIsEditingSkills] = useState(false);
   const [postCount, setPostCount] = useState(0);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,6 +33,7 @@ const Profile = () => {
     setEmail(user.email || "");
     loadProfile();
     loadPostCount();
+    loadFollowCounts();
   }, [user, navigate]);
 
   const loadProfile = async () => {
@@ -36,8 +42,8 @@ const Profile = () => {
     const { data, error } = await supabase
       .from("profiles")
       .select("skills")
-      .eq("id", user.id)
-      .single();
+      .eq("user_id", user.id)
+      .maybeSingle();
 
     if (data && data.skills) {
       setSkills(data.skills);
@@ -56,13 +62,30 @@ const Profile = () => {
     setPostCount(count || 0);
   };
 
+  const loadFollowCounts = async () => {
+    if (!user) return;
+
+    const { count: followers } = await supabase
+      .from("follows")
+      .select("*", { count: "exact", head: true })
+      .eq("following_id", user.id);
+
+    const { count: following } = await supabase
+      .from("follows")
+      .select("*", { count: "exact", head: true })
+      .eq("follower_id", user.id);
+
+    setFollowersCount(followers || 0);
+    setFollowingCount(following || 0);
+  };
+
   const saveSkills = async (updatedSkills: string[]) => {
     if (!user) return;
 
     const { error } = await supabase
       .from("profiles")
       .update({ skills: updatedSkills })
-      .eq("id", user.id);
+      .eq("user_id", user.id);
 
     if (error) {
       toast({
@@ -212,16 +235,25 @@ const Profile = () => {
             <div>
               <h3 className="text-sm font-medium mb-3">Statistics</h3>
               <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-primary/10 rounded-lg transition-all hover:scale-105">
+                <div 
+                  className="text-center p-4 bg-primary/10 rounded-lg transition-all hover:scale-105 cursor-pointer"
+                  onClick={() => navigate("/create")}
+                >
                   <p className="text-2xl font-bold text-primary">{postCount}</p>
                   <p className="text-sm text-muted-foreground">Posts</p>
                 </div>
-                <div className="text-center p-4 bg-primary/10 rounded-lg transition-all hover:scale-105">
-                  <p className="text-2xl font-bold text-primary">0</p>
+                <div 
+                  className="text-center p-4 bg-primary/10 rounded-lg transition-all hover:scale-105 cursor-pointer"
+                  onClick={() => setShowFollowersModal(true)}
+                >
+                  <p className="text-2xl font-bold text-primary">{followersCount}</p>
                   <p className="text-sm text-muted-foreground">Followers</p>
                 </div>
-                <div className="text-center p-4 bg-primary/10 rounded-lg transition-all hover:scale-105">
-                  <p className="text-2xl font-bold text-primary">0</p>
+                <div 
+                  className="text-center p-4 bg-primary/10 rounded-lg transition-all hover:scale-105 cursor-pointer"
+                  onClick={() => setShowFollowingModal(true)}
+                >
+                  <p className="text-2xl font-bold text-primary">{followingCount}</p>
                   <p className="text-sm text-muted-foreground">Following</p>
                 </div>
               </div>
@@ -229,6 +261,23 @@ const Profile = () => {
           </CardContent>
         </Card>
       </div>
+
+      {user && (
+        <>
+          <FollowersModal
+            isOpen={showFollowersModal}
+            onClose={() => setShowFollowersModal(false)}
+            userId={user.id}
+            type="followers"
+          />
+          <FollowersModal
+            isOpen={showFollowingModal}
+            onClose={() => setShowFollowingModal(false)}
+            userId={user.id}
+            type="following"
+          />
+        </>
+      )}
     </div>
   );
 };
