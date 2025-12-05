@@ -18,7 +18,7 @@ const Navbar = () => {
             <img 
               src={blogNestLogo} 
               alt="BlogNest" 
-              className="h-12 w-auto animate-pulse hover:brightness-125 transition-all duration-300"
+              className="h-12 w-auto hover:brightness-110 transition-all duration-300"
             />
           </Link>
 
